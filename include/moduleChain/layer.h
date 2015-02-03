@@ -2,6 +2,7 @@
 #define MODULECHAIN_LAYER_H
 
 #include <iostream>
+#include <memory>
 #include <algorithm>
 
 namespace moduleChain {
@@ -10,8 +11,8 @@ inline std::mutex& getCurrentModuleMutex() {
 	static std::mutex m;
 	return m;
 }
-inline Module*& getCurrentModule() {
-	static Module* m(nullptr);
+inline std::shared_ptr<Module>& getCurrentModule() {
+	static std::shared_ptr<Module> m(nullptr);
 	return m;
 }
 
@@ -19,13 +20,13 @@ class Layer {
 //private:
 public:
 	std::string name;
-	std::vector<Module*> modules;
+	std::vector<std::shared_ptr<Module>> modules;
 	std::vector<Module*> executionOrder;
 	Module* parentModule;
 public:
 	Layer(std::string const& _name, std::vector<std::string> const& _moduleList)
 		: name(_name)
-		, parentModule(getCurrentModule()) {
+		, parentModule(getCurrentModule().get()) {
 		if (parentModule != nullptr) {
 			parentModule->addSubLayer(this);
 		}
@@ -38,13 +39,13 @@ public:
 		return mutex;
 	}
 	template<typename T>
-	std::map<Layer*, T*>& getRepresentations() {
-		static std::map<Layer*, T*> repMap;
+	std::map<Layer*, std::shared_ptr<T>>& getRepresentations() {
+		static std::map<Layer*, std::shared_ptr<T>> repMap;
 		return repMap;
 	}
 
 	template<typename T>
-	T* getRepresentationPtr() {
+	std::shared_ptr<T> getRepresentationPtr() {
 		std::unique_lock<std::mutex> lock(getMutex<T>());
 		auto& repMap = getRepresentations<T>();
 		if (repMap.find(this) == repMap.end()) {
@@ -52,7 +53,7 @@ public:
 				auto ptr = parentModule->getLayer()->getRepresentationPtr<T>();
 				repMap[this] = ptr;
 			} else {
-				repMap[this] = new T();
+				repMap[this] = std::make_shared<T>();
 			}
 		}
 		return repMap.at(this);
@@ -69,10 +70,11 @@ public:
 	template<typename T>
 	void addModule(std::string const& _name, void (T::*_execute)()) {
 		getCurrentModuleMutex().lock();
-		Module* m = new Module{_name, this};
+		std::shared_ptr<Module> oldModule = getCurrentModule();
+		std::shared_ptr<Module> m = std::make_shared<Module>(_name, this);
 		getCurrentModule() = m;
-		T* t = new T();
-		getCurrentModule() = nullptr;
+		std::shared_ptr<T> t = std::make_shared<T>();
+		getCurrentModule() = oldModule;
 		getCurrentModuleMutex().unlock();
 
 		m->setExecutors(std::bind(_execute, t));
@@ -93,12 +95,12 @@ public:
 				for (auto m2 : modules) {
 					for (auto r2 : m2->getRequires()) {
 						if (r1 == r2) {
-							moduleEdges.push_back({m1,  m2});
+							moduleEdges.push_back({m1.get(),  m2.get()});
 						}
 					}
 				}
 			}
-			moduleVertexes.push_back(m1);
+			moduleVertexes.push_back(m1.get());
 		}
 
 		while(!moduleVertexes.empty()) {
