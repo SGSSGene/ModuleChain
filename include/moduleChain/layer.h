@@ -93,7 +93,7 @@ public:
 				for (auto m2 : modules) {
 					for (auto r2 : m2->getRequires()) {
 						if (r1 == r2) {
-							moduleEdges.push_back(std::make_pair(m1,  m2));
+							moduleEdges.push_back({m1,  m2});
 						}
 					}
 				}
