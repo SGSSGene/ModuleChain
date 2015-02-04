@@ -43,7 +43,7 @@ REGISTER_MODULE(T3);
 
 
 int main() {
-	moduleChain::Layer l1("test", {"T1", "T2", "T3"});
+	moduleChain::Chain l1("test", {"T1", "T2", "T3"});
 
 	while(true) {
 		l1.run();

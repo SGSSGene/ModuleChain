@@ -9,29 +9,30 @@
 
 namespace moduleChain {
 
-class Layer;
+class Chain;
+
 class Module {
 private:
 	std::string              name;      //!< Name of this Module
-	Layer*                   layer;     //!< Layer this Module belongs to
+	Chain*                   chain;     //!< Chain this Module belongs to
 	std::vector<void const*> require;   //!< Pointer to all representations that are required
 	std::vector<void*>       provide;   //!< Pointer to all representations that are provided
-	std::vector<Layer*>      subLayers; //!< Pointer to all layers that are run inside this Module
+	std::vector<Chain*>      subChains; //!< Pointer to all Chains that are run inside this Module
 
 	std::function<void()> executeFunc;  //!< Execute function of this module
 
 public:
-	Module(std::string const& _name, Layer* _layer)
+	Module(std::string const& _name, Chain* _chain)
 		: name(_name)
-		, layer(_layer)
+		, chain(_chain)
 		, executeFunc(nullptr) {
 	}
 
 	std::string const& getName() const { return name; }
-	Layer* getLayer() const { return layer; }
+	Chain* getChain() const { return chain; }
 	std::vector<void const*> const& getRequires() const { return require; }
 	std::vector<void*>       const& getProvides() const { return provide; }
-	std::vector<Layer*> const&      getSubLayers() const { return subLayers; }
+	std::vector<Chain*> const&      getSubChains() const { return subChains; }
 
 	void addRequire(void const* _r) {
 		require.push_back(_r);
@@ -39,8 +40,8 @@ public:
 	void addProvide(void* _r) {
 		provide.push_back(_r);
 	}
-	void addSubLayer(Layer* _layer) {
-		subLayers.push_back(_layer);
+	void addSubChain(Chain* _chain) {
+		subChains.push_back(_chain);
 	}
 
 

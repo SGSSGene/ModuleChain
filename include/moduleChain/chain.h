@@ -1,5 +1,5 @@
-#ifndef MODULECHAIN_LAYER_H
-#define MODULECHAIN_LAYER_H
+#ifndef MODULECHAIN_CHAIN_H
+#define MODULECHAIN_CHAIN_H
 
 #include <iostream>
 #include <memory>
@@ -16,7 +16,7 @@ inline std::shared_ptr<Module>& getCurrentModule() {
 	return m;
 }
 
-class Layer {
+class Chain {
 //private:
 public:
 	std::string name;
@@ -24,11 +24,11 @@ public:
 	std::vector<Module*> executionOrder;
 	Module* parentModule;
 public:
-	Layer(std::string const& _name, std::vector<std::string> const& _moduleList)
+	Chain(std::string const& _name, std::vector<std::string> const& _moduleList)
 		: name(_name)
 		, parentModule(getCurrentModule().get()) {
 		if (parentModule != nullptr) {
-			parentModule->addSubLayer(this);
+			parentModule->addSubChain(this);
 		}
 		createModules(_moduleList);
 	}
@@ -39,8 +39,8 @@ public:
 		return mutex;
 	}
 	template<typename T>
-	std::map<Layer*, std::shared_ptr<T>>& getRepresentations() {
-		static std::map<Layer*, std::shared_ptr<T>> repMap;
+	std::map<Chain*, std::shared_ptr<T>>& getRepresentations() {
+		static std::map<Chain*, std::shared_ptr<T>> repMap;
 		return repMap;
 	}
 
@@ -50,7 +50,7 @@ public:
 		auto& repMap = getRepresentations<T>();
 		if (repMap.find(this) == repMap.end()) {
 			if (parentModule != nullptr) {
-				auto ptr = parentModule->getLayer()->getRepresentationPtr<T>();
+				auto ptr = parentModule->getChain()->getRepresentationPtr<T>();
 				repMap[this] = ptr;
 			} else {
 				repMap[this] = std::make_shared<T>();
@@ -65,7 +65,7 @@ public:
 	}
 
 	/**
-	 * adds a module to the execution list of this layer
+	 * adds a module to the execution list of this Chain
 	 */
 	template<typename T>
 	void addModule(std::string const& _name, void (T::*_execute)()) {
@@ -83,7 +83,7 @@ public:
 	void computeExecutionList() {
 		executionOrder.clear();
 		for (auto& m : modules) {
-			for (auto& l : m->getSubLayers()) {
+			for (auto& l : m->getSubChains()) {
 				l->computeExecutionList();
 			}
 		}
@@ -128,7 +128,7 @@ public:
 	void runImpl() {
 		for (auto& m : executionOrder) {
 			(*m)();
-			for (auto& l: m->getSubLayers()) {
+			for (auto& l: m->getSubChains()) {
 				l->runImpl();
 			}
 		}
