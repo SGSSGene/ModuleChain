@@ -17,8 +17,7 @@ inline std::shared_ptr<Module>& getCurrentModule() {
 }
 
 class Chain {
-//private:
-public:
+private:
 	std::string name;
 	std::vector<std::shared_ptr<Module>> modules;
 	std::vector<Module*> executionOrder;
