@@ -27,8 +27,8 @@ This library makes it very simple expressing "require" and "provide" relationshi
 ### How to run modules in one layer
 ```c
 int main() {
-	moduleChain::Layer layer("testLayer", {"Module1", "Module2"});
-	layer.run();
+	moduleChain::Chain chain("testChain", {"Module1", "Module2"});
+	chain.run();
 	return 0;
 }
 ```
