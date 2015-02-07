@@ -30,6 +30,7 @@ public:
 			parentModule->addSubChain(this);
 		}
 		createModules(_moduleList);
+		computeExecutionList();
 	}
 
 	template<typename T>
@@ -93,7 +94,10 @@ public:
 		modules.push_back(m);
 	}
 	void computeExecutionList() {
+		// clear execution order
 		executionOrder.clear();
+
+		// compute execution order of all subChains
 		for (auto& m : modules) {
 			for (auto& l : m->getSubChains()) {
 				l->computeExecutionList();
@@ -102,6 +106,8 @@ public:
 		std::vector<Module*> moduleVertexes;
 		std::vector<std::pair<Module*, Module*>> moduleEdges;
 
+		// adding all edges between provide and require
+		// into moduleEdges
 		for (auto m1 : modules) {
 			for (auto r1 : m1->getProvides()) {
 				for (auto m2 : modules) {
@@ -115,7 +121,10 @@ public:
 			moduleVertexes.push_back(m1.get());
 		}
 
+		// Loop until all modules are satisfied
 		while(!moduleVertexes.empty()) {
+			bool progress{false};
+			// Check if one of the modules has a require, that some one else provides
 			for (auto& m : moduleVertexes) {
 				int ct(0);
 				for (auto& p : moduleEdges) {
@@ -124,6 +133,8 @@ public:
 						break;
 					}
 				}
+				// If module has no require that is provided by someone else, put it into the list
+				//!TODO if no one provides the requirement it will still be pushed
 				if (ct == 0) {
 					executionOrder.push_back(m);
 					moduleEdges.erase(std::remove_if(moduleEdges.begin(), moduleEdges.end(), [m](std::pair<Module*, Module*> _p) {
@@ -131,8 +142,13 @@ public:
 					}), moduleEdges.end());
 					m = moduleVertexes.back();
 					moduleVertexes.pop_back();
+					progress = true;
 					break;
 				}
+			}
+			if (not progress) {
+				std::cerr<<"Couldn't compute execution list of moduleChain::Chain: "<<name<<std::endl;
+				break;
 			}
 		}
 	}
@@ -145,7 +161,6 @@ public:
 		}
 	}
 	void run() {
-		computeExecutionList();
 		runImpl();
 
 	}
