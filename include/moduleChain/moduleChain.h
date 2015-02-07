@@ -57,12 +57,12 @@ using PtrToMemFunc = void (T::*)(void);
 class GetFunction_##FUNC { \
 public: \
 	template<typename T> \
-	static auto _get(int i) -> decltype(&T::FUNC){ \
+	static auto _get(int) -> decltype(&T::FUNC){ \
 		return &T::FUNC; \
 	} \
 \
 	template<typename T> \
-	static PtrToMemFunc<T> _get(long i) { \
+	static PtrToMemFunc<T> _get(long) { \
 		return nullptr; \
 	} \
 \
