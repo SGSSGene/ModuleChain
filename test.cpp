@@ -17,6 +17,9 @@ class T1 {
 	moduleChain::Provide<R2> r2;
 
 public:
+	void init() {
+		std::cout<<"init, only called once"<<std::endl;
+	}
 	void execute() {
 		std::cout<<"T1"<<std::endl;
 	}
@@ -45,7 +48,7 @@ REGISTER_MODULE(T3);
 int main() {
 	moduleChain::Chain l1("test", {"T1", "T2", "T3"});
 
-	while(true) {
+	for (int i(0); i<10; ++i) {
 		l1.run();
 	}
 

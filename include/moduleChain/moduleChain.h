@@ -50,10 +50,36 @@ public:
 };
 
 
+template<typename T>
+using PtrToMemFunc = void (T::*)(void);
+
+#define GET_FUNCTION(FUNC) \
+class GetFunction_##FUNC { \
+public: \
+	template<typename T> \
+	static auto _get(int i) -> decltype(&T::FUNC){ \
+		return &T::FUNC; \
+	} \
+\
+	template<typename T> \
+	static PtrToMemFunc<T> _get(long i) { \
+		return nullptr; \
+	} \
+\
+	template<typename T> \
+	static PtrToMemFunc<T> get() { \
+		return _get<T>(int(0)); \
+	} \
+};
+
+GET_FUNCTION(execute)
+GET_FUNCTION(init)
+
 #define REGISTER_MODULE(CLASS) \
 namespace { \
 	moduleChain::ModuleFactory m##CLASS(#CLASS, [](moduleChain::Chain& chain) { \
-		chain.addModule<CLASS>(#CLASS, &CLASS::execute); \
+		chain.addModule<CLASS>(#CLASS, moduleChain::GetFunction_execute::get<CLASS>(), \
+		                               moduleChain::GetFunction_init::get<CLASS>()); \
 	}); \
 }
 

@@ -67,7 +67,7 @@ public:
 	 * adds a module to the execution list of this Chain
 	 */
 	template<typename T>
-	void addModule(std::string const& _name, void (T::*_execute)()) {
+	void addModule(std::string const& _name, void (T::*_execute)(), void (T::*_init)()) {
 		getCurrentModuleMutex().lock();
 		std::shared_ptr<Module> oldModule = getCurrentModule();
 		std::shared_ptr<Module> m = std::make_shared<Module>(_name, this);
@@ -76,7 +76,20 @@ public:
 		getCurrentModule() = oldModule;
 		getCurrentModuleMutex().unlock();
 
-		m->setExecutors(std::bind(_execute, t));
+
+		auto executor = [t, _execute, _init]() {
+			static bool firstRun{true};
+			if (firstRun) {
+				if (_init) {
+					(t.get()->*_init)();
+				}
+				firstRun = false;
+			}
+			if (_execute) {
+				(t.get()->*_execute)();
+			}
+		};
+		m->setExecutors(executor);
 		modules.push_back(m);
 	}
 	void computeExecutionList() {
@@ -113,7 +126,6 @@ public:
 				}
 				if (ct == 0) {
 					executionOrder.push_back(m);
-					std::cout<<"First run "<<m->getName()<<std::endl;
 					moduleEdges.erase(std::remove_if(moduleEdges.begin(), moduleEdges.end(), [m](std::pair<Module*, Module*> _p) {
 						return m == _p.first;
 					}), moduleEdges.end());
