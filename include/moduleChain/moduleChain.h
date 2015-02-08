@@ -15,7 +15,8 @@ private:
 	T const& _rep;
 public:
 	Require()
-		: _rep(getCurrentModule()->getChain()->getRepresentation<T>()) {
+		: Representation(getCurrentModule(), nullptr)
+		, _rep(getCurrentModule()->getChain()->getRepresentation<T>()) {
 		getCurrentModule()->addRequire(this);
 	}
 	T const* operator->() const {
@@ -39,7 +40,8 @@ private:
 	T& _rep;
 public:
 	Provide()
-		: _rep(getCurrentModule()->getChain()->getRepresentation<T>()) {
+		: Representation(nullptr, getCurrentModule())
+		, _rep(getCurrentModule()->getChain()->getRepresentation<T>()) {
 		getCurrentModule()->addProvide(this);
 	}
 	T const& operator *() const {
