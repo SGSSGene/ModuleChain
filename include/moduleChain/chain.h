@@ -29,7 +29,6 @@ private:
 
 	std::string    name;
 	ModuleUPtrList modules;
-	ModulePtrList  executionOrder;
 	Module*        parentModule;
 	RepUPtrList    repList;
 
@@ -42,7 +41,6 @@ public:
 			parentModule->addSubChain(this);
 		}
 		createModules(_moduleList);
-		computeExecutionList();
 	}
 
 	template<typename T>
@@ -107,65 +105,7 @@ public:
 		m->setExecutors(executor);
 		modules.push_back(std::move(m));
 	}
-	void computeExecutionList() {
-		// clear execution order
-		executionOrder.clear();
 
-		// compute execution order of all subChains
-		for (auto& m : modules) {
-			for (auto& l : m->getSubChains()) {
-				l->computeExecutionList();
-			}
-		}
-		std::vector<Module*> moduleVertexes;
-		std::vector<std::pair<Module*, Module*>> moduleEdges;
-
-		// adding all edges between provide and require
-		// into moduleEdges
-		for (auto const& m1 : modules) {
-			for (auto const& r1 : m1->getProvides()) {
-				for (auto const& m2 : modules) {
-					for (auto const& r2 : m2->getRequires()) {
-						if (r1 == r2) {
-							moduleEdges.push_back({m1.get(),  m2.get()});
-						}
-					}
-				}
-			}
-			moduleVertexes.push_back(m1.get());
-		}
-
-		// Loop until all modules are satisfied
-		while(!moduleVertexes.empty()) {
-			bool progress{false};
-			// Check if one of the modules has a require, that some one else provides
-			for (auto& m : moduleVertexes) {
-				int ct(0);
-				for (auto& p : moduleEdges) {
-					if (p.second == m) {
-						++ct;
-						break;
-					}
-				}
-				// If module has no require that is provided by someone else, put it into the list
-				//!TODO if no one provides the requirement it will still be pushed
-				if (ct == 0) {
-					executionOrder.push_back(m);
-					moduleEdges.erase(std::remove_if(moduleEdges.begin(), moduleEdges.end(), [m](std::pair<Module*, Module*> _p) {
-						return m == _p.first;
-					}), moduleEdges.end());
-					m = moduleVertexes.back();
-					moduleVertexes.pop_back();
-					progress = true;
-					break;
-				}
-			}
-			if (not progress) {
-				std::cerr<<"Couldn't compute execution list of moduleChain::Chain: "<<name<<std::endl;
-				break;
-			}
-		}
-	}
 	void runImpl() {
 		for (auto& m : modules) {
 			m->resetRequirementCount();
@@ -192,13 +132,6 @@ public:
 				break;
 			}
 		}
-
-/*		for (auto& m : executionOrder) {
-			(*m)();
-			for (auto& l: m->getSubChains()) {
-				l->runImpl();
-			}
-		}*/
 	}
 	void run() {
 		runImpl();
