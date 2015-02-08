@@ -14,14 +14,16 @@ class Representation;
 
 class Module {
 private:
-	std::string              name;      //!< Name of this Module
-	Chain*                   chain;     //!< Chain this Module belongs to
-	std::vector<Representation const*> require;   //!< Pointer to all representations that are required
-	std::vector<Representation*>       provide;   //!< Pointer to all representations that are provided
-	std::vector<Chain*>      subChains; //!< Pointer to all Chains that are run inside this Module
+	std::string                  name;      //!< Name of this Module
+	Chain*                       chain;     //!< Chain this Module belongs to
+	std::vector<Representation*> require;   //!< Pointer to all representations that are required
+	std::vector<Representation*> provide;   //!< Pointer to all representations that are provided
+	std::vector<Chain*>          subChains; //!< Pointer to all Chains that are run inside this Module
 
 	std::function<void()> executeFunc;  //!< Execute function of this module
 
+	mutable std::mutex mutex;
+	int requirementCount;
 public:
 	Module(std::string const& _name, Chain* _chain)
 		: name(_name)
@@ -31,11 +33,11 @@ public:
 
 	std::string const& getName() const { return name; }
 	Chain* getChain() const { return chain; }
-	std::vector<Representation const*> const& getRequires() const { return require; }
-	std::vector<Representation*>       const& getProvides() const { return provide; }
+	std::vector<Representation*> const& getRequires() const { return require; }
+	std::vector<Representation*> const& getProvides() const { return provide; }
 	std::vector<Chain*> const&      getSubChains() const { return subChains; }
 
-	void addRequire(Representation const* _r) {
+	void addRequire(Representation* _r) {
 		require.push_back(_r);
 	}
 	void addProvide(Representation* _r) {
@@ -52,8 +54,19 @@ public:
 		executeFunc = _executeFunc;
 	}
 	// calls the executeFunction
-	void operator()() {
-		executeFunc();
+	void operator()();
+
+	void resetRequirementCount() {
+		std::unique_lock<std::mutex> lock(mutex);
+		requirementCount = 0;
+	}
+	void incRequirementCount() {
+		std::unique_lock<std::mutex> lock(mutex);
+		++requirementCount;
+	}
+	bool hasRequirementCount() const {
+		std::unique_lock<std::mutex> lock(mutex);
+		return requirementCount == int(require.size());
 	}
 
 };

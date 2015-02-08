@@ -1,9 +1,10 @@
 #ifndef MODULECHAIN_CHAIN_H
 #define MODULECHAIN_CHAIN_H
 
-#include <iostream>
-#include <memory>
 #include <algorithm>
+#include <iostream>
+#include <list>
+#include <memory>
 
 #include "threadPool/threadPool.h"
 
@@ -24,11 +25,14 @@ class Chain {
 private:
 	using ModuleUPtrList = std::vector<std::unique_ptr<Module>>;
 	using ModulePtrList  = std::vector<Module*>;
+	using RepUPtrList    = std::vector<std::unique_ptr<Representation>>;
 
 	std::string    name;
 	ModuleUPtrList modules;
 	ModulePtrList  executionOrder;
 	Module*        parentModule;
+	RepUPtrList    repList;
+
 	threadPool::ThreadPool<int> threadPool;
 public:
 	Chain(std::string const& _name, std::vector<std::string> const& _moduleList)
@@ -47,13 +51,13 @@ public:
 		return mutex;
 	}
 	template<typename T>
-	std::map<Chain*, std::shared_ptr<T>>& getRepresentations() {
-		static std::map<Chain*, std::shared_ptr<T>> repMap;
+	std::map<Chain*, Store<T>*>& getRepresentations() {
+		static std::map<Chain*, Store<T>*> repMap;
 		return repMap;
 	}
 
 	template<typename T>
-	std::shared_ptr<T> getRepresentationPtr() {
+	Store<T>* getRepresentationPtr() {
 		std::unique_lock<std::mutex> lock(getMutex<T>());
 		auto& repMap = getRepresentations<T>();
 		if (repMap.find(this) == repMap.end()) {
@@ -61,14 +65,16 @@ public:
 				auto ptr = parentModule->getChain()->getRepresentationPtr<T>();
 				repMap[this] = ptr;
 			} else {
-				repMap[this] = std::make_shared<T>();
+				Store<T>* store = new Store<T>;
+				repMap[this] = store;
+				repList.push_back(std::move(std::unique_ptr<Representation>(store)));
 			}
 		}
 		return repMap.at(this);
 	}
 
 	template<typename T>
-	T& getRepresentation() {
+	Store<T>& getRepresentation() {
 		return *getRepresentationPtr<T>();
 	}
 
@@ -120,7 +126,7 @@ public:
 			for (auto const& r1 : m1->getProvides()) {
 				for (auto const& m2 : modules) {
 					for (auto const& r2 : m2->getRequires()) {
-						if (r1->getInternalPtr() == r2->getInternalPtr()) {
+						if (r1 == r2) {
 							moduleEdges.push_back({m1.get(),  m2.get()});
 						}
 					}
@@ -161,12 +167,38 @@ public:
 		}
 	}
 	void runImpl() {
-		for (auto& m : executionOrder) {
+		for (auto& m : modules) {
+			m->resetRequirementCount();
+		}
+		for (auto& r : repList) {
+			r->resetProvideCount();
+		}
+
+		std::list<Module*> openModuleList;
+		for (auto& m : modules) {
+			openModuleList.push_back(m.get());
+		}
+		while (not openModuleList.empty()) {
+			auto lastSize = openModuleList.size();
+			for (auto iter = openModuleList.begin(); iter != openModuleList.end(); ++iter) {
+				if ((*iter)->hasRequirementCount()) {
+					(**iter)();
+					openModuleList.erase(iter);
+					break;
+				}
+			}
+			if (lastSize == openModuleList.size()) {
+				std::cerr<<"Can't full fill all requirements, abort run: "<<name<<std::endl;
+				break;
+			}
+		}
+
+/*		for (auto& m : executionOrder) {
 			(*m)();
 			for (auto& l: m->getSubChains()) {
 				l->runImpl();
 			}
-		}
+		}*/
 	}
 	void run() {
 		runImpl();

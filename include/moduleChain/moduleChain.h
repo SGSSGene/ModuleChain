@@ -10,39 +10,15 @@
 namespace moduleChain {
 
 template<typename T>
-class Require : public Representation {
+class Provide {
 private:
-	T const& _rep;
-public:
-	Require()
-		: Representation(getCurrentModule(), nullptr)
-		, _rep(getCurrentModule()->getChain()->getRepresentation<T>()) {
-		getCurrentModule()->addRequire(this);
-	}
-	T const* operator->() const {
-		return &_rep;
-	}
-	T const& operator*() const {
-		return _rep;
-	}
-	virtual void const* getInternalPtr() const override {
-		return &_rep;
-	}
-
-};
-
-class ProvideBase {
-};
-
-template<typename T>
-class Provide : public Representation {
-private:
-	T& _rep;
+	Store<T>& _rep;
 public:
 	Provide()
-		: Representation(nullptr, getCurrentModule())
-		, _rep(getCurrentModule()->getChain()->getRepresentation<T>()) {
-		getCurrentModule()->addProvide(this);
+		: _rep(getCurrentModule()->getChain()->getRepresentation<T>()) {
+		getCurrentModule()->addProvide(&_rep);
+		_rep.addProvidedBy(getCurrentModule());
+
 	}
 	T const& operator *() const {
 		return _rep;
@@ -57,10 +33,25 @@ public:
 	T* operator->() {
 		return &_rep;
 	}
-	virtual void const* getInternalPtr() const override {
+};
+
+
+template<typename T>
+class Require {
+private:
+	Store<T>& _rep;
+public:
+	Require()
+		: _rep(getCurrentModule()->getChain()->getRepresentation<T>()) {
+		getCurrentModule()->addRequire(&_rep);
+		_rep.addRequiredBy(getCurrentModule());
+	}
+	T const* operator->() const {
 		return &_rep;
 	}
-
+	T const& operator*() const {
+		return _rep;
+	}
 };
 
 
