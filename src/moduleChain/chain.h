@@ -136,7 +136,7 @@ public:
 
 		// List all Modules
 		for (auto& m : modules) {
-			out<<name<<m->getName()<<" [label=\""<<m->getName()<<"\", shap=box, style=filled, fillcolor=\"#CCCCCC\"]"<<std::endl;
+			out<<name<<m->getName()<<" [label=\""<<m->getName()<<"\", shape=box, style=filled, fillcolor=\"#CCCCCC\"]"<<std::endl;
 		}
 		// List all Representations
 		for (auto& r : repList) {
