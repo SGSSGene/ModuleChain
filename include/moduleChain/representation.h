@@ -6,9 +6,10 @@
 namespace moduleChain {
 
 class Representation {
-public:
+protected:
 	std::vector<Module*> providedByList;
 	std::vector<Module*> requiredByList;
+public:
 	virtual void const* getInternalPtr() const = 0;
 };
 

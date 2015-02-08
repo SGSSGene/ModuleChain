@@ -15,25 +15,25 @@ inline std::mutex& getCurrentModuleMutex() {
 	static std::mutex m;
 	return m;
 }
-inline std::shared_ptr<Module>& getCurrentModule() {
-	static std::shared_ptr<Module> m(nullptr);
+inline Module*& getCurrentModule() {
+	static Module* m{nullptr};
 	return m;
 }
 
 class Chain {
 private:
-	using ModuleSPtrList = std::vector<std::shared_ptr<Module>>;
+	using ModuleUPtrList = std::vector<std::unique_ptr<Module>>;
 	using ModulePtrList  = std::vector<Module*>;
 
 	std::string    name;
-	ModuleSPtrList modules;
+	ModuleUPtrList modules;
 	ModulePtrList  executionOrder;
 	Module*        parentModule;
 	threadPool::ThreadPool<int> threadPool;
 public:
 	Chain(std::string const& _name, std::vector<std::string> const& _moduleList)
 		: name(_name)
-		, parentModule(getCurrentModule().get()) {
+		, parentModule(getCurrentModule()) {
 		if (parentModule != nullptr) {
 			parentModule->addSubChain(this);
 		}
@@ -78,9 +78,9 @@ public:
 	template<typename T>
 	void addModule(std::string const& _name, void (T::*_execute)(), void (T::*_init)()) {
 		getCurrentModuleMutex().lock();
-		std::shared_ptr<Module> oldModule = getCurrentModule();
-		std::shared_ptr<Module> m = std::make_shared<Module>(_name, this);
-		getCurrentModule() = m;
+		Module* oldModule = getCurrentModule();
+		std::unique_ptr<Module> m {new Module(_name, this)};
+		getCurrentModule() = m.get();
 		std::shared_ptr<T> t = std::make_shared<T>();
 		getCurrentModule() = oldModule;
 		getCurrentModuleMutex().unlock();
@@ -99,7 +99,7 @@ public:
 			}
 		};
 		m->setExecutors(executor);
-		modules.push_back(m);
+		modules.push_back(std::move(m));
 	}
 	void computeExecutionList() {
 		// clear execution order
@@ -116,10 +116,10 @@ public:
 
 		// adding all edges between provide and require
 		// into moduleEdges
-		for (auto m1 : modules) {
-			for (auto r1 : m1->getProvides()) {
-				for (auto m2 : modules) {
-					for (auto r2 : m2->getRequires()) {
+		for (auto const& m1 : modules) {
+			for (auto const& r1 : m1->getProvides()) {
+				for (auto const& m2 : modules) {
+					for (auto const& r2 : m2->getRequires()) {
 						if (r1->getInternalPtr() == r2->getInternalPtr()) {
 							moduleEdges.push_back({m1.get(),  m2.get()});
 						}
