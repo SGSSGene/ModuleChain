@@ -5,6 +5,10 @@
 #include <memory>
 #include <algorithm>
 
+#include "threadPool/threadPool.h"
+
+#include "representation.h"
+
 namespace moduleChain {
 
 inline std::mutex& getCurrentModuleMutex() {
@@ -18,10 +22,14 @@ inline std::shared_ptr<Module>& getCurrentModule() {
 
 class Chain {
 private:
-	std::string name;
-	std::vector<std::shared_ptr<Module>> modules;
-	std::vector<Module*> executionOrder;
-	Module* parentModule;
+	using ModuleSPtrList = std::vector<std::shared_ptr<Module>>;
+	using ModulePtrList  = std::vector<Module*>;
+
+	std::string    name;
+	ModuleSPtrList modules;
+	ModulePtrList  executionOrder;
+	Module*        parentModule;
+	threadPool::ThreadPool<int> threadPool;
 public:
 	Chain(std::string const& _name, std::vector<std::string> const& _moduleList)
 		: name(_name)
@@ -112,7 +120,7 @@ public:
 			for (auto r1 : m1->getProvides()) {
 				for (auto m2 : modules) {
 					for (auto r2 : m2->getRequires()) {
-						if (r1 == r2) {
+						if (r1->getInternalPtr() == r2->getInternalPtr()) {
 							moduleEdges.push_back({m1.get(),  m2.get()});
 						}
 					}

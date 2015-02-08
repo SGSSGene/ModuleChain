@@ -3,19 +3,20 @@
 
 #include "module.h"
 #include "chain.h"
+#include "representation.h"
 #include "moduleFactory.h"
 
 
 namespace moduleChain {
 
 template<typename T>
-class Require {
+class Require : public Representation {
 private:
 	T const& _rep;
 public:
 	Require()
 		: _rep(getCurrentModule()->getChain()->getRepresentation<T>()) {
-		getCurrentModule()->addRequire(&_rep);
+		getCurrentModule()->addRequire(this);
 	}
 	T const* operator->() const {
 		return &_rep;
@@ -23,16 +24,23 @@ public:
 	T const& operator*() const {
 		return _rep;
 	}
+	virtual void const* getInternalPtr() const override {
+		return &_rep;
+	}
+
+};
+
+class ProvideBase {
 };
 
 template<typename T>
-class Provide {
+class Provide : public Representation {
 private:
 	T& _rep;
 public:
 	Provide()
 		: _rep(getCurrentModule()->getChain()->getRepresentation<T>()) {
-		getCurrentModule()->addProvide(&_rep);
+		getCurrentModule()->addProvide(this);
 	}
 	T const& operator *() const {
 		return _rep;
@@ -47,6 +55,10 @@ public:
 	T* operator->() {
 		return &_rep;
 	}
+	virtual void const* getInternalPtr() const override {
+		return &_rep;
+	}
+
 };
 
 
