@@ -32,15 +32,18 @@ private:
 	Module*        parentModule;
 	RepUPtrList    repList;
 
-	threadPool::ThreadPool<int> threadPool;
+	threadPool::ThreadPool<Module*> threadPool;
 public:
-	Chain(std::string const& _name, std::vector<std::string> const& _moduleList)
+	Chain(std::string const& _name, std::vector<std::string> const& _moduleList, int _threadCt=1)
 		: name(_name)
 		, parentModule(getCurrentModule()) {
 		if (parentModule != nullptr) {
 			parentModule->addSubChain(this);
 		}
 		createModules(_moduleList);
+		threadPool.spawnThread([](Module* m) {
+			(*m)();
+		}, _threadCt);
 	}
 
 	template<typename T>
@@ -106,36 +109,18 @@ public:
 		modules.push_back(std::move(m));
 	}
 
-	void runImpl() {
+	void addModuleToExecutionList(Module* m) {
+		threadPool.queue(m);
+	}
+
+	void run() {
 		for (auto& m : modules) {
 			m->resetRequirementCount();
 		}
 		for (auto& r : repList) {
 			r->resetProvideCount();
 		}
-
-		std::list<Module*> openModuleList;
-		for (auto& m : modules) {
-			openModuleList.push_back(m.get());
-		}
-		while (not openModuleList.empty()) {
-			auto lastSize = openModuleList.size();
-			for (auto iter = openModuleList.begin(); iter != openModuleList.end(); ++iter) {
-				if ((*iter)->hasRequirementCount()) {
-					(**iter)();
-					openModuleList.erase(iter);
-					break;
-				}
-			}
-			if (lastSize == openModuleList.size()) {
-				std::cerr<<"Can't full fill all requirements, abort run: "<<name<<std::endl;
-				break;
-			}
-		}
-	}
-	void run() {
-		runImpl();
-
+		threadPool.wait();
 	}
 
 	void createModules(std::vector<std::string> const& _name);

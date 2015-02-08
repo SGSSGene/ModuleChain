@@ -56,19 +56,8 @@ public:
 	// calls the executeFunction
 	void operator()();
 
-	void resetRequirementCount() {
-		std::unique_lock<std::mutex> lock(mutex);
-		requirementCount = 0;
-	}
-	void incRequirementCount() {
-		std::unique_lock<std::mutex> lock(mutex);
-		++requirementCount;
-	}
-	bool hasRequirementCount() const {
-		std::unique_lock<std::mutex> lock(mutex);
-		return requirementCount == int(require.size());
-	}
-
+	void resetRequirementCount();
+	void incRequirementCount();
 };
 
 }
