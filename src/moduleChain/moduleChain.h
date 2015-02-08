@@ -21,17 +21,17 @@ public:
 
 	}
 	T const& operator *() const {
-		return _rep;
+		return *(_rep.get());
 	}
 	T& operator *() {
-		return _rep;
+		return *(_rep.get());
 	}
 
 	T const* operator->() const {
-		return &_rep;
+		return _rep.get();
 	}
 	T* operator->() {
-		return &_rep;
+		return _rep.get();
 	}
 };
 
@@ -46,11 +46,12 @@ public:
 		getCurrentModule()->addRequire(&_rep);
 		_rep.addRequiredBy(getCurrentModule());
 	}
-	T const* operator->() const {
-		return &_rep;
-	}
 	T const& operator*() const {
-		return _rep;
+		return *(_rep.get());
+	}
+
+	T const* operator->() const {
+		return _rep.get();
 	}
 };
 
