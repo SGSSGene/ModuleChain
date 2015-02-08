@@ -5,6 +5,7 @@
 #include <iostream>
 #include <list>
 #include <memory>
+#include <ostream>
 
 #include "threadPool/threadPool.h"
 
@@ -124,6 +125,41 @@ public:
 	}
 
 	void createModules(std::vector<std::string> const& _name);
+
+	void generateDotFile(std::ostream& out) {
+
+		out<<"digraph {"<<std::endl;
+		out<<"graph [rankdir=\"TB\"]"<<std::endl<<std::endl;
+
+		out<<"subgraph cluster"<<name<<" {"<<std::endl;
+		out<<"label=\""<<name<<"\";"<<std::endl<<std::endl;
+
+		// List all Modules
+		for (auto& m : modules) {
+			out<<name<<m->getName()<<" [label=\""<<m->getName()<<"\", shap=box, style=filled, fillcolor=\"#CCCCCC\"]"<<std::endl;
+		}
+		// List all Representations
+		for (auto& r : repList) {
+			out<<name<<r->getName()<<" [label=\""<<r->getName()<<"\"]"<<std::endl;
+		}
+
+		// List all requires and provides to modules
+		for (auto& m : modules) {
+			for (auto const& r : m->getProvides()) {
+				out<<name<<m->getName()<<" -> "<<name<<r->getName()<<std::endl;
+			}
+			for (auto const& r : m->getRequires()) {
+				out<<name<<r->getName()<<" -> "<<name<<m->getName()<<std::endl;
+			}
+
+		}
+
+		out<<"}"<<std::endl<<std::endl;
+
+
+
+		out<<"}"<<std::endl;
+	}
 };
 
 

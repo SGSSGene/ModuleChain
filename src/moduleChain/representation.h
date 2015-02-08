@@ -2,6 +2,7 @@
 #define REPRESENTATION_MODULE_H
 
 #include <memory>
+#include <typeinfo>
 
 #include "module.h"
 
@@ -36,6 +37,7 @@ public:
 			}
 		}
 	}
+	virtual std::string getName() const = 0;
 };
 
 template <typename T>
@@ -45,10 +47,14 @@ private:
 public:
 	T* get() {
 		return &t;
-	}
+}
 	T const* get() const {
 		return &t;
 	}
+	virtual std::string getName() const {
+		return typeid(t).name();
+	}
+
 
 };
 

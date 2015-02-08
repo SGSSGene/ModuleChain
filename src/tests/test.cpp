@@ -64,12 +64,15 @@ REGISTER_MODULE(T4);
 
 
 int main() {
-	moduleChain::Chain l1("test", {"T1", "T2", "T3", "T4"}, 2);
+	moduleChain::Chain chain("testChain", {"T1", "T2", "T3", "T4"}, 2);
 
 	for (int i(0); i<3; ++i) {
 		std::cout<<std::endl<<"loop: "<<i<<std::endl;
-		l1.run();
+		chain.run();
 	}
+
+//	chain.generateDotFile(std::cout);
+
 
 	return 0;
 }
