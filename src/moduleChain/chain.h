@@ -7,7 +7,7 @@
 #include <memory>
 #include <ostream>
 
-#include "threadPool/threadPool.h"
+#include <threadPool/threadPool.h>
 
 #include "representation.h"
 
