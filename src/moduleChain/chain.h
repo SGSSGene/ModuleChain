@@ -34,6 +34,8 @@ private:
 	Module*        parentModule;
 	RepSPtrList    repList;
 
+	std::atomic<int> runCount {0};
+
 	threadPool::ThreadPool<Module*> threadPool;
 public:
 	Chain(std::string const& _name, std::vector<std::string> const& _moduleList, int _threadCt=1)
@@ -69,8 +71,8 @@ public:
 		getCurrentModule() = oldModule;
 		getCurrentModuleMutex().unlock();
 
-
-		auto executor = [t, _execute, _init]() {
+		auto& _runCount = runCount;
+		auto executor = [t, _execute, _init, &_runCount]() {
 			static bool firstRun{true};
 			if (firstRun) {
 				if (_init) {
@@ -80,6 +82,7 @@ public:
 			}
 			if (_execute) {
 				(t.get()->*_execute)();
+				_runCount += 1;
 			}
 		};
 		m->setExecutors(executor);
@@ -91,6 +94,7 @@ public:
 	}
 
 	void run() {
+		runCount = 0;
 		for (auto& m : modules) {
 			m->resetRequirementCount();
 		}
@@ -98,6 +102,9 @@ public:
 			r->resetProvideCount();
 		}
 		threadPool.wait();
+		if (runCount < int(modules.size())) {
+			std::cerr<<"Couldn't run all modules"<<std::endl;
+		}
 	}
 
 	void createModules(std::vector<std::string> const& _name);

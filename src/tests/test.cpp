@@ -104,9 +104,11 @@ void test1() {
 }
 void test2() {
 	moduleChain::Chain chain("testChain", {"T1"}, 2);
+	chain.run();
 }
 int main() {
-	test2();
+	//test2();
+	test1();
 
 	return 0;
 }
