@@ -10,6 +10,7 @@
 #include <threadPool/threadPool.h>
 
 #include "representation.h"
+#include "representationManager.h"
 
 namespace moduleChain {
 
@@ -26,12 +27,12 @@ class Chain {
 private:
 	using ModuleUPtrList = std::vector<std::unique_ptr<Module>>;
 	using ModulePtrList  = std::vector<Module*>;
-	using RepUPtrList    = std::vector<std::unique_ptr<Representation>>;
+	using RepSPtrList    = std::vector<std::shared_ptr<Representation>>;
 
 	std::string    name;
 	ModuleUPtrList modules;
 	Module*        parentModule;
-	RepUPtrList    repList;
+	RepSPtrList    repList;
 
 	threadPool::ThreadPool<Module*> threadPool;
 public:
@@ -47,38 +48,13 @@ public:
 		}, _threadCt);
 	}
 
-	template<typename T>
-	std::mutex& getMutex() {
-		static std::mutex mutex;
-		return mutex;
-	}
-	template<typename T>
-	std::map<Chain*, Store<T>*>& getRepresentations() {
-		static std::map<Chain*, Store<T>*> repMap;
-		return repMap;
+	template<typename R>
+	Store<R>& getRepresentation() {
+		auto store = RepresentationManager<R>::getRepresentationPtr(this);
+		repList.push_back(store);
+		return *store;
 	}
 
-	template<typename T>
-	Store<T>* getRepresentationPtr() {
-		std::unique_lock<std::mutex> lock(getMutex<T>());
-		auto& repMap = getRepresentations<T>();
-		if (repMap.find(this) == repMap.end()) {
-			if (parentModule != nullptr) {
-				auto ptr = parentModule->getChain()->getRepresentationPtr<T>();
-				repMap[this] = ptr;
-			} else {
-				Store<T>* store = new Store<T>;
-				repMap[this] = store;
-				repList.push_back(std::move(std::unique_ptr<Representation>(store)));
-			}
-		}
-		return repMap.at(this);
-	}
-
-	template<typename T>
-	Store<T>& getRepresentation() {
-		return *getRepresentationPtr<T>();
-	}
 
 	/**
 	 * adds a module to the execution list of this Chain

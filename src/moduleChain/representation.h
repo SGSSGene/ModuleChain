@@ -16,13 +16,14 @@ protected:
 	std::mutex mutex;
 	int provideCount;
 public:
+	virtual ~Representation() {}
+
 	void addProvidedBy(Module* _providedBy) {
 		providedByList.push_back(_providedBy);
 	}
 	void addRequiredBy(Module* _requiredBy) {
 		requiredByList.push_back(_requiredBy);
 	}
-	virtual ~Representation() {}
 
 	void resetProvideCount() {
 		std::unique_lock<std::mutex> lock(mutex);
@@ -38,24 +39,6 @@ public:
 		}
 	}
 	virtual std::string getName() const = 0;
-};
-
-template <typename T>
-class Store : public Representation {
-private:
-	T t;
-public:
-	T* get() {
-		return &t;
-}
-	T const* get() const {
-		return &t;
-	}
-	virtual std::string getName() const {
-		return typeid(t).name();
-	}
-
-
 };
 
 }
