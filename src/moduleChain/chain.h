@@ -34,7 +34,8 @@ private:
 	Module*        parentModule;
 	RepSPtrList    repList;
 
-	std::atomic<int> runCount {0};
+	int runCount {0};
+	std::mutex mutexSetup;
 
 	threadPool::ThreadPool<Module*> threadPool;
 public:
@@ -45,7 +46,11 @@ public:
 			parentModule->addSubChain(this);
 		}
 		createModules(_moduleList);
-		threadPool.spawnThread([](Module* m) {
+		threadPool.spawnThread([&](Module* m) {
+			{
+				std::unique_lock<std::mutex> lock(mutexSetup);
+				runCount += 1;
+			}
 			(*m)();
 		}, _threadCt);
 	}
@@ -94,12 +99,15 @@ public:
 	}
 
 	void run() {
-		runCount = 0;
-		for (auto& m : modules) {
-			m->resetRequirementCount();
-		}
-		for (auto& r : repList) {
-			r->resetProvideCount();
+		{
+			std::unique_lock<std::mutex> lock(mutexSetup);
+			runCount = 0;
+			for (auto& m : modules) {
+				m->resetRequirementCount();
+			}
+			for (auto& r : repList) {
+				r->resetProvideCount();
+			}
 		}
 		threadPool.wait();
 		if (runCount < int(modules.size())) {
