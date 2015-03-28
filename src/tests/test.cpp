@@ -103,12 +103,16 @@ void test1() {
 	printData();
 }
 void test2() {
-	moduleChain::Chain chain("testChain", {"T1"}, 2);
-	chain.run();
+	try {
+		moduleChain::Chain chain("testChain", {"T1"}, 2);
+		chain.run();
+	} catch (std::exception& e) {
+		std::cout<<"Faild running chain. "<<e.what()<<std::endl;
+	}
 }
 int main() {
-	//test2();
-	test1();
+	test2();
+	//test1();
 
 	return 0;
 }

@@ -38,6 +38,12 @@ public:
 			}
 		}
 	}
+	int getLengthOfProviderList() const {
+		return int(providedByList.size());
+	}
+	bool hasProvideCount() const {
+		return provideCount == int(providedByList.size());
+	}
 	virtual std::string getName() const = 0;
 };
 

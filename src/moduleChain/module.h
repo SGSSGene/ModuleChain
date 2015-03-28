@@ -58,6 +58,7 @@ public:
 
 	void resetRequirementCount();
 	void incRequirementCount();
+	bool hasRequirementCountMax();
 };
 
 }

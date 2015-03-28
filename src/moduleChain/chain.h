@@ -2,7 +2,6 @@
 #define MODULECHAIN_CHAIN_H
 
 #include <algorithm>
-#include <iostream>
 #include <list>
 #include <memory>
 #include <ostream>
@@ -111,7 +110,19 @@ public:
 		}
 		threadPool.wait();
 		if (runCount < int(modules.size())) {
-			std::cerr<<"Couldn't run all modules"<<std::endl;
+			std::string error {"Couldn't run all modules:"};
+			for (auto const& m : modules) {
+				if (not m->hasRequirementCountMax()) {
+					error += "\n  Failed: "+m->getName();
+					for (auto const& r : m->getRequires()) {
+						if (not r->hasProvideCount()
+						    || r->getLengthOfProviderList() == 0) {
+							error += "\n    wasn't fully provided: "+r->getName();
+						}
+					}
+				}
+			}
+			throw std::runtime_error(error);
 		}
 	}
 

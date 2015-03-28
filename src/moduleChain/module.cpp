@@ -26,6 +26,8 @@ void Module::incRequirementCount() {
 		chain->addModuleToExecutionList(this);
 	}
 }
-
+bool Module::hasRequirementCountMax() {
+	return requirementCount == int(require.size());
+}
 
 }

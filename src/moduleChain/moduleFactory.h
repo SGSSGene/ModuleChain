@@ -16,15 +16,14 @@ public:
 
 	static void registerModule(std::string const& _name, std::function<void(Chain&)> _func) {
 		if (getModuleMap().find(_name) != getModuleMap().end()) {
-			std::cerr<<"moduleChain: overriding module register for "<<_name<<std::endl;
+			throw std::runtime_error("moduleChain: overriding module register for " + _name);
 		}
 		getModuleMap()[_name] = _func;
 	}
 
 	static void createInstance(Chain& _Chain, std::string const& _name) {
 		if (getModuleMap().find(_name) == getModuleMap().end()) {
-			std::cerr<<"moduleChain: Can't create instance of module, not registered: "<<_name<<std::endl;
-			return;
+			throw std::runtime_error("moduleChain: Can't create instance of module, not registered: " + _name);
 		}
 		getModuleMap().at(_name)(_Chain);
 	}
